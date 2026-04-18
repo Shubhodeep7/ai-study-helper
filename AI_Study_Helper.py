@@ -12,7 +12,7 @@ st.sidebar.title("Options")
 st.sidebar.write("Built for Hackathon 🚀")
 
 # Configure AI (DO THIS ONCE)
-genai.configure(api_key="AIzaSyB60Ngf-F6a4d5o9zg31HaUrlmabaFYZNc")
+genai.configure(api_key="AIzaSyA5gGVZ8MGbhEcyVfVqeHc6HWHivorkq28")
 
 # File upload
 uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
@@ -34,10 +34,10 @@ if st.button("✨ Generate Summary"):
     if text.strip() == "":
         st.error("No text found in PDF!")
     else:
-        model = genai.GenerativeModel("models/gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
 
         response = model.generate_content(
-            "Summarize this text:\n" + text[:12000]
+            "Summarize this text:\n" + text[:6000]
         )
 
         st.write("### Summary")
