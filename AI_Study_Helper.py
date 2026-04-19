@@ -34,11 +34,19 @@ if st.button("✨ Generate Summary"):
     if text.strip() == "":
         st.error("No text found in PDF!")
     else:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+try:
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
-        response = model.generate_content(
-            "Summarize this text:\n" + text[:6000]
-        )
+    response = model.generate_content(
+        "Summarize this text in simple points:\n" + text[:5000]
+    )
 
-        st.write("### Summary")
+    summary = response.text
+
+    st.write("### Summary")
+    st.write(summary)
+
+except Exception as e:
+    st.error("Error generating summary")
+    st.write(e)
         st.write(response.text)
