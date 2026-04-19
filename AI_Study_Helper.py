@@ -11,7 +11,7 @@ st.subheader("Upload your PDF and get instant summary")
 st.sidebar.title("Options")
 st.sidebar.write("Built for Hackathon 🚀")
 
-# Configure AI (DO THIS ONCE)
+# Configure AI
 genai.configure(api_key="AIzaSyA5gGVZ8MGbhEcyVfVqeHc6HWHivorkq28")
 
 # File upload
@@ -31,20 +31,26 @@ if uploaded_file is not None:
 
 # Button
 if st.button("✨ Generate Summary"):
+
     if text.strip() == "":
         st.error("No text found in PDF!")
+
     else:
-try:
-    model = genai.GenerativeModel("gemini-2.0-flash")
+        try:
+            model = genai.GenerativeModel("gemini-2.0-flash")
 
-    response = model.generate_content(
-        "Summarize this text in simple points:\n" + text[:5000]
-    )
+            response = model.generate_content(
+                "Summarize this text in simple points:\n" + text[:5000]
+            )
 
-    summary = response.text
+            summary = response.text
 
-    st.write("### Summary")
-    st.write(summary)
+            st.write("### Summary")
+            st.write(summary)
+
+        except Exception as e:
+            st.error("Error generating summary")
+            st.write(e)
 
 except Exception as e:
     st.error("Error generating summary")
