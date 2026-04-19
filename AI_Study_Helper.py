@@ -37,10 +37,10 @@ if st.button("✨ Generate Summary"):
 
     else:
         try:
-            model = genai.GenerativeModel("gemini-2.0-flash")
+            model = genai.GenerativeModel("gemini-1.5-flash")
 
             response = model.generate_content(
-                "Summarize this text in simple points:\n" + text[:5000]
+                "Summarize this text in simple points:\n" + text[:3000]
             )
 
             summary = response.text
