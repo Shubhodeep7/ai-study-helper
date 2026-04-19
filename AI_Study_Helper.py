@@ -12,7 +12,9 @@ st.sidebar.title("Options")
 st.sidebar.write("Built for Hackathon 🚀")
 
 # Configure AI
-genai.configure(api_key="AIzaSyAo633-P63Yg4Rvo46xCDfYPjFQAUf97WY")
+import os
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # File upload
 uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
