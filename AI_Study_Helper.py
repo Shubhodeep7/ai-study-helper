@@ -29,7 +29,7 @@ if uploaded_file is not None:
 
     st.success("PDF uploaded successfully!")
 
-# Button
+# Generate Summary Button
 if st.button("✨ Generate Summary"):
 
     if text.strip() == "":
@@ -50,9 +50,4 @@ if st.button("✨ Generate Summary"):
 
         except Exception as e:
             st.error("Error generating summary")
-            st.write(e)
-
-except Exception as e:
-    st.error("Error generating summary")
-    st.write(e)
-        st.write(response.text)
+            st.write(str(e))
