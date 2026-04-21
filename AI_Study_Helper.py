@@ -4,41 +4,118 @@ import google.generativeai as genai
 import os
 
 # Page setup
-st.set_page_config(page_title="AI Study Helper", layout="centered")
+st.set_page_config(
+    page_title="AI Study Assistant",
+    page_icon="📚",
+    layout="centered"
+)
 
-st.title("📚 AI Study Helper")
-st.subheader("Upload your PDF and interact with it using AI")
+# ---------------------------
+# CUSTOM UI STYLING
+# ---------------------------
 
-# Sidebar
-st.sidebar.title("Options")
-st.sidebar.write("Built for Hackathon 🚀")
+st.markdown("""
+<style>
+
+.main {
+    background-color: #f5f7fb;
+}
+
+h1 {
+    text-align: center;
+    color: #1f77b4;
+}
+
+.stButton > button {
+    background-color: #1f77b4;
+    color: white;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+.stTextInput > div > div > input {
+    border-radius: 10px;
+}
+
+.block-container {
+    padding-top: 2rem;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------
+# HEADER
+# ---------------------------
+
+st.markdown("""
+<h1>📚 AI Study Assistant</h1>
+<p style='text-align:center; font-size:18px;'>
+Upload your notes, summarize instantly, and ask questions using AI
+</p>
+""", unsafe_allow_html=True)
+
+# ---------------------------
+# SIDEBAR
+# ---------------------------
+
+st.sidebar.title("🚀 AI Study Helper")
+
+st.sidebar.markdown("""
+### Features
+
+- 📄 PDF Summary  
+- 💬 Chat With Notes  
+- 📥 Download Results  
+- 🧠 Study Smarter
+""")
+
+st.sidebar.success("Hackathon Ready")
 
 # Configure AI
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-# File upload
-uploaded_file = st.file_uploader("Upload your PDF", type="pdf")
+# ---------------------------
+# FILE UPLOAD
+# ---------------------------
+
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    uploaded_file = st.file_uploader(
+        "📂 Upload your PDF",
+        type="pdf"
+    )
+
+with col2:
+    st.info("Supported format:\nPDF")
 
 text = ""
 
-# Extract text from PDF
+# Extract text
 if uploaded_file is not None:
 
     reader = PdfReader(uploaded_file)
 
     for page in reader.pages:
+
         page_text = page.extract_text()
 
         if page_text:
             text += page_text
 
-    st.success("PDF uploaded successfully!")
+    st.success("✅ PDF uploaded successfully!")
+
+st.divider()
 
 # ---------------------------
-# SUMMARY FEATURE
+# SUMMARY SECTION
 # ---------------------------
 
-if st.button("✨ Generate Summary"):
+st.markdown("## ✨ Generate Summary")
+
+if st.button("Generate Summary"):
 
     if text.strip() == "":
         st.error("No text found in PDF!")
@@ -47,7 +124,9 @@ if st.button("✨ Generate Summary"):
         try:
             with st.spinner("Generating summary..."):
 
-                model = genai.GenerativeModel("gemini-2.5-flash")
+                model = genai.GenerativeModel(
+                    "gemini-2.5-flash"
+                )
 
                 response = model.generate_content(
                     "Summarize this text in simple bullet points:\n"
@@ -56,22 +135,36 @@ if st.button("✨ Generate Summary"):
 
                 summary = response.text
 
-                st.write("### Summary")
+                st.success("Summary Generated!")
+
                 st.write(summary)
 
+                # DOWNLOAD SUMMARY BUTTON
+
+                st.download_button(
+                    label="📥 Download Summary",
+                    data=summary,
+                    file_name="summary.txt",
+                    mime="text/plain"
+                )
+
         except Exception as e:
+
             st.error("Error generating summary")
+
             st.write(str(e))
 
+st.divider()
+
 # ---------------------------
-# CHAT WITH PDF FEATURE
+# CHAT SECTION
 # ---------------------------
 
-st.write("---")
+st.markdown("## 💬 Chat With Your PDF")
 
-st.header("💬 Ask Questions From Your PDF")
-
-question = st.text_input("Enter your question")
+question = st.text_input(
+    "Ask a question from your notes"
+)
 
 if st.button("Ask Question"):
 
@@ -85,7 +178,9 @@ if st.button("Ask Question"):
         try:
             with st.spinner("Thinking..."):
 
-                model = genai.GenerativeModel("gemini-2.5-flash")
+                model = genai.GenerativeModel(
+                    "gemini-2.5-flash"
+                )
 
                 prompt = f"""
                 Use the following PDF content to answer the question.
@@ -99,14 +194,38 @@ if st.button("Ask Question"):
                 Give a clear and simple answer.
                 """
 
-                response = model.generate_content(prompt)
+                response = model.generate_content(
+                    prompt
+                )
 
                 answer = response.text
 
-                st.write("### Answer")
+                st.success("Answer Generated!")
+
                 st.write(answer)
 
+                # DOWNLOAD ANSWER BUTTON
+
+                st.download_button(
+                    label="📥 Download Answer",
+                    data=answer,
+                    file_name="answer.txt",
+                    mime="text/plain"
+                )
+
         except Exception as e:
+
             st.error("Error generating answer")
+
             st.write(str(e))
-            st.write(str(e))
+
+# ---------------------------
+# FOOTER
+# ---------------------------
+
+st.markdown("""
+<hr>
+<center>
+Built with ❤️ using Python, Streamlit, and AI
+</center>
+""", unsafe_allow_html=True)
