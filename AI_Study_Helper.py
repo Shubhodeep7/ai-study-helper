@@ -122,28 +122,50 @@ if st.button("Generate Summary"):
 
     else:
         try:
-            with st.spinner("Generating summary..."):
+            with st.spinner("Analyzing document..."):
 
                 model = genai.GenerativeModel(
                     "gemini-2.5-flash"
                 )
 
-                response = model.generate_content(
-                    "Summarize this text in simple bullet points:\n"
-                    + text[:3000]
-                )
+                prompt = f"""
+                You are an expert teacher.
 
-                summary = response.text
+                From the following PDF content:
 
-                st.success("Summary Generated!")
+                1. Identify the SUBJECT of the document in one line.
+                2. Explain the content in simple language.
+                3. Focus on understanding, not definitions.
+                4. Give practical explanation and key ideas.
+                5. Use bullet points.
 
-                st.write(summary)
+                Format exactly like this:
 
-                # DOWNLOAD SUMMARY BUTTON
+                Subject:
+                <subject name>
+
+                Explanation Summary:
+                - point
+                - point
+                - point
+
+                Content:
+                {text[:3000]}
+                """
+
+                response = model.generate_content(prompt)
+
+                result = response.text
+
+                st.success("Analysis Complete!")
+
+                st.write(result)
+
+                # DOWNLOAD BUTTON
 
                 st.download_button(
                     label="📥 Download Summary",
-                    data=summary,
+                    data=result,
                     file_name="summary.txt",
                     mime="text/plain"
                 )
