@@ -1,7 +1,6 @@
 import streamlit as st
 from PyPDF2 import PdfReader
 import google.generativeai as genai
-import os
 import math
 from gtts import gTTS
 import tempfile
@@ -9,7 +8,6 @@ import tempfile
 # ---------------------------
 # PAGE SETUP
 # ---------------------------
-
 st.set_page_config(
     page_title="AI Study Assistant",
     page_icon="📚",
@@ -19,7 +17,6 @@ st.set_page_config(
 # ---------------------------
 # UI STYLING
 # ---------------------------
-
 st.markdown("""
 <style>
 .stButton > button {
@@ -38,9 +35,7 @@ st.subheader("Upload your notes, summarize, and interact using AI")
 # ---------------------------
 # SIDEBAR
 # ---------------------------
-
 st.sidebar.title("🚀 Features")
-
 st.sidebar.markdown("""
 - Performance Dashboard  
 - AI Content Analysis  
@@ -55,424 +50,185 @@ st.sidebar.markdown("""
 # ---------------------------
 # CONFIGURE AI
 # ---------------------------
-
-genai.configure(
-    api_key=st.secrets["GEMINI_API_KEY"]
-)
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 # ---------------------------
 # FILE UPLOAD
 # ---------------------------
-
-uploaded_file = st.file_uploader(
-    "📂 Upload your PDF",
-    type="pdf"
-)
+uploaded_file = st.file_uploader("📂 Upload your PDF", type="pdf")
 
 text = ""
-
-# ---------------------------
-# EXTRACT TEXT + PROGRESS BAR
-# ---------------------------
 
 if uploaded_file is not None:
 
     reader = PdfReader(uploaded_file)
-
     progress = st.progress(0)
-
     total_pages = len(reader.pages)
 
     for i, page in enumerate(reader.pages):
-
         page_text = page.extract_text()
-
         if page_text:
             text += page_text
-
         progress.progress((i + 1) / total_pages)
 
     st.success("✅ PDF uploaded successfully!")
 
     # ---------------------------
-    # PERFORMANCE DASHBOARD
+    # DASHBOARD
     # ---------------------------
-
     st.write("---")
     st.header("📊 Performance Dashboard")
 
     word_count = len(text.split())
-
-    reading_time = math.ceil(
-        word_count / 200
-    )
-
-    file_size = round(
-        uploaded_file.size / 1024,
-        2
-    )
+    reading_time = math.ceil(word_count / 200)
+    file_size = round(uploaded_file.size / 1024, 2)
 
     col1, col2 = st.columns(2)
-
-    col1.metric(
-        "📄 Number of Pages",
-        total_pages
-    )
-
-    col2.metric(
-        "📝 Word Count",
-        word_count
-    )
+    col1.metric("📄 Pages", total_pages)
+    col2.metric("📝 Words", word_count)
 
     col3, col4 = st.columns(2)
-
-    col3.metric(
-        "⏱ Reading Time",
-        f"{reading_time} minutes"
-    )
-
-    col4.metric(
-        "💾 File Size",
-        f"{file_size} KB"
-    )
+    col3.metric("⏱ Reading Time", f"{reading_time} min")
+    col4.metric("💾 Size", f"{file_size} KB")
 
     # ---------------------------
-    # AI CONTENT ANALYSIS
+    # AI ANALYSIS
     # ---------------------------
-
     st.write("---")
     st.subheader("🧠 AI Content Analysis")
 
-    if st.button(
-        "Detect Key Topics & Difficulty"
-    ):
+    if st.button("Detect Key Topics & Difficulty"):
 
-        try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
-            with st.spinner(
-                "Analyzing content..."
-            ):
-
-                model = genai.GenerativeModel(
-                    "gemini-2.5-flash"
-                )
-
-                prompt = f"""
-Analyze the following study material.
-
-Return:
+        response = model.generate_content(f"""
+Analyze this study material:
 
 1. Key Topics
 2. Difficulty Level
 
 Content:
 {text[:4000]}
-"""
+""")
 
-                response = model.generate_content(
-                    prompt
-                )
+        st.write(response.text)
 
-                st.success(
-                    "Analysis Complete!"
-                )
-
-                st.write(
-                    response.text
-                )
-
-        except Exception as e:
-
-            st.error(
-                "Error analyzing content"
-            )
-
-            st.write(str(e))
-
+# ---------------------------
+# SUMMARY SECTION
+# ---------------------------
 st.divider()
 
-# ---------------------------
-# GENERATE SUMMARY
-# ---------------------------
-
-if st.button(
-    "✨ Generate Summary"
-):
+if st.button("✨ Generate Summary"):
 
     if text.strip() == "":
-
-        st.error(
-            "No text found in PDF!"
-        )
+        st.error("Upload a PDF first!")
 
     else:
 
-        try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
-            with st.spinner(
-                "Generating summary..."
-            ):
-
-                model = genai.GenerativeModel(
-                    "gemini-2.5-flash"
-                )
-
-                response = model.generate_content(
-                    f"""
+        response = model.generate_content(f"""
 You are an expert teacher.
 
-1. Identify the SUBJECT
+1. Identify subject
 2. Explain clearly
 3. Use bullet points
 
 Content:
 {text[:3000]}
-"""
-                )
+""")
 
-                summary = response.text
+        st.session_state["summary"] = response.text
 
-                st.success(
-                    "Summary Generated!"
-                )
+        st.success("Summary Generated!")
+        st.write(st.session_state["summary"])
 
-                st.write(summary)
+# ---------------------------
+# AUDIO (FIXED - OUTSIDE BUTTON)
+# ---------------------------
+if "summary" in st.session_state:
 
-                # ---------------------------
-                # AUDIO SUMMARY
-                # ---------------------------
+    st.subheader("🎧 Listen to Summary")
 
-                st.subheader(
-                    "🎧 Listen to Summary"
-                )
+    if st.button("Generate Audio"):
 
-                if st.button(
-                    "Generate Audio"
-                ):
+        with st.spinner("Creating podcast..."):
 
-                    with st.spinner(
-                        "Creating podcast..."
-                    ):
+            tts = gTTS(st.session_state["summary"], lang="en")
 
-                        tts = gTTS(
-                            text=summary,
-                            lang="en"
-                        )
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+            tts.save(temp_file.name)
 
-                        temp_file = tempfile.NamedTemporaryFile(
-                            delete=False,
-                            suffix=".mp3"
-                        )
+            with open(temp_file.name, "rb") as f:
+                audio_bytes = f.read()
 
-                        tts.save(
-                            temp_file.name
-                        )
+            st.success("Audio Ready!")
+            st.audio(audio_bytes, format="audio/mp3")
 
-                        st.success(
-                            "Audio Ready!"
-                        )
-
-                        st.audio(
-                            temp_file.name
-                        )
-
-                        with open(
-                            temp_file.name,
-                            "rb"
-                        ) as audio_file:
-
-                            st.download_button(
-                                label="Download Audio",
-                                data=audio_file,
-                                file_name="summary_audio.mp3",
-                                mime="audio/mp3"
-                            )
-
-                # ---------------------------
-                # DOWNLOAD SUMMARY
-                # ---------------------------
-
-                st.download_button(
-                    label="📥 Download Summary",
-                    data=summary,
-                    file_name="summary.txt",
-                    mime="text/plain"
-                )
-
-        except Exception as e:
-
-            st.error(
-                "Error generating summary"
+            st.download_button(
+                label="📥 Download Audio",
+                data=audio_bytes,
+                file_name="summary_audio.mp3",
+                mime="audio/mp3"
             )
 
-            st.write(str(e))
-
+# ---------------------------
+# IMPORTANT POINTS
+# ---------------------------
 st.divider()
+st.header("⭐ Important Sentences")
 
-# ---------------------------
-# IMPORTANT SENTENCES
-# ---------------------------
-
-st.header(
-    "⭐ Important Sentences"
-)
-
-if st.button(
-    "Extract Important Points"
-):
+if st.button("Extract Important Points"):
 
     if text.strip() == "":
-
-        st.error(
-            "Upload a PDF first"
-        )
+        st.error("Upload a PDF first")
 
     else:
 
-        try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
-            with st.spinner(
-                "Finding key points..."
-            ):
+        response = model.generate_content(f"""
+Extract 5–8 important bullet points:
 
-                model = genai.GenerativeModel(
-                    "gemini-2.5-flash"
-                )
-
-                response = model.generate_content(
-                    f"""
-Extract the most important sentences.
-
-Return 5–8 bullet points.
-
-Content:
 {text[:3000]}
-"""
-                )
+""")
 
-                st.success(
-                    "Important points extracted!"
-                )
+        st.write(response.text)
 
-                st.write(
-                    response.text
-                )
-
-        except Exception as e:
-
-            st.error(
-                "Error extracting points"
-            )
-
-            st.write(str(e))
-
+# ---------------------------
+# Q&A SECTION
+# ---------------------------
 st.divider()
+st.header("💬 Ask Questions From PDF")
 
-# ---------------------------
-# CHAT SECTION
-# ---------------------------
+question = st.text_input("Type your question")
 
-st.header(
-    "💬 Ask Questions From Your PDF"
-)
-
-question = st.text_input(
-    "Type your question"
-)
-
-st.subheader(
-    "🎤 Or ask using voice"
-)
-
-audio = st.audio_input(
-    "Record your question"
-)
-
-if audio is not None:
-
-    st.success(
-        "Voice recorded!"
-    )
-
-    question = "Voice question received"
-
-# ---------------------------
-# ASK QUESTION
-# ---------------------------
-
-if st.button(
-    "Ask Question"
-):
+if st.button("Ask Question"):
 
     if text.strip() == "":
-
-        st.error(
-            "Upload a PDF first"
-        )
+        st.error("Upload a PDF first")
 
     elif question.strip() == "":
-
-        st.error(
-            "Enter a question"
-        )
+        st.error("Enter a question")
 
     else:
 
-        try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
-            with st.spinner(
-                "Thinking..."
-            ):
-
-                model = genai.GenerativeModel(
-                    "gemini-2.5-flash"
-                )
-
-                prompt = f"""
+        response = model.generate_content(f"""
 Content:
 {text[:4000]}
 
 Question:
 {question}
-"""
+""")
 
-                response = model.generate_content(
-                    prompt
-                )
-
-                answer = response.text
-
-                st.success(
-                    "Answer Generated!"
-                )
-
-                st.write(answer)
-
-                st.download_button(
-                    label="📥 Download Answer",
-                    data=answer,
-                    file_name="answer.txt",
-                    mime="text/plain"
-                )
-
-        except Exception as e:
-
-            st.error(
-                "Error generating answer"
-            )
-
-            st.write(str(e))
+        st.write(response.text)
 
 # ---------------------------
 # FOOTER
 # ---------------------------
-
-st.markdown(
-    """
+st.markdown("""
 <hr>
-<center>
-Built for Hackathon 🚀
-</center>
-""",
-    unsafe_allow_html=True
-)
+<center>Built for Hackathon 🚀</center>
+""", unsafe_allow_html=True)
