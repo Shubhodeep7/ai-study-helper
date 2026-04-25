@@ -4,7 +4,10 @@ import google.generativeai as genai
 import os
 import math
 
-# Page setup
+# ---------------------------
+# PAGE SETUP
+# ---------------------------
+
 st.set_page_config(
     page_title="AI Study Assistant",
     page_icon="📚",
@@ -21,6 +24,8 @@ st.markdown("""
     background-color: #1f77b4;
     color: white;
     border-radius: 10px;
+    height: 3em;
+    width: 100%;
 }
 
 .metric-box {
@@ -35,19 +40,29 @@ st.markdown("""
 st.title("📚 AI Study Assistant")
 st.subheader("Upload your notes, summarize, and interact using AI")
 
-# Sidebar
+# ---------------------------
+# SIDEBAR
+# ---------------------------
+
 st.sidebar.title("🚀 Features")
+
 st.sidebar.markdown("""
+- Performance Dashboard  
+- AI Content Analysis  
 - PDF Summary  
-- Chat with Notes  
 - Important Sentences  
+- Chat with Notes  
 - Voice Questions  
 - Download Results  
-- Performance Dashboard
 """)
 
-# Configure AI
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# ---------------------------
+# CONFIGURE AI
+# ---------------------------
+
+genai.configure(
+    api_key=st.secrets["GEMINI_API_KEY"]
+)
 
 # ---------------------------
 # FILE UPLOAD
@@ -92,47 +107,102 @@ if uploaded_file is not None:
 
     word_count = len(text.split())
 
-    # Reading time calculation
     reading_time = math.ceil(word_count / 200)
 
-    # File size
-    file_size = round(uploaded_file.size / 1024, 2)
+    file_size = round(
+        uploaded_file.size / 1024,
+        2
+    )
 
     col1, col2 = st.columns(2)
 
     col1.metric(
-        label="📄 Number of Pages",
-        value=total_pages
+        "📄 Number of Pages",
+        total_pages
     )
 
     col2.metric(
-        label="📝 Word Count",
-        value=word_count
+        "📝 Word Count",
+        word_count
     )
 
     col3, col4 = st.columns(2)
 
     col3.metric(
-        label="⏱ Estimated Reading Time",
-        value=f"{reading_time} minutes"
+        "⏱ Reading Time",
+        f"{reading_time} minutes"
     )
 
     col4.metric(
-        label="💾 File Size",
-        value=f"{file_size} KB"
+        "💾 File Size",
+        f"{file_size} KB"
     )
 
     # ---------------------------
-    # SHOW PDF DETAILS
+    # AI CONTENT ANALYSIS
     # ---------------------------
 
-    st.info(f"""
-📄 File Name: {uploaded_file.name}  
-📑 Pages: {total_pages}  
-📝 Words: {word_count}  
-⏱ Reading Time: {reading_time} minutes  
-💾 File Size: {file_size} KB
-""")
+    st.write("---")
+    st.subheader("🧠 AI Content Analysis")
+
+    if st.button(
+        "Detect Key Topics & Difficulty"
+    ):
+
+        if text.strip() == "":
+            st.error(
+                "Upload a PDF first"
+            )
+
+        else:
+
+            try:
+
+                with st.spinner(
+                    "Analyzing content..."
+                ):
+
+                    model = genai.GenerativeModel(
+                        "gemini-2.5-flash"
+                    )
+
+                    prompt = f"""
+Analyze the following study material.
+
+Return:
+
+1. Key Topics (3–6 bullet points)
+2. Difficulty Level (Easy / Medium / Hard)
+
+Use simple language.
+
+Content:
+{text[:4000]}
+"""
+
+                    response = model.generate_content(
+                        prompt
+                    )
+
+                    analysis = response.text
+
+                    st.success(
+                        "Analysis Complete!"
+                    )
+
+                    st.write(
+                        analysis
+                    )
+
+            except Exception as e:
+
+                st.error(
+                    "Error analyzing content"
+                )
+
+                st.write(
+                    str(e)
+                )
 
 st.divider()
 
@@ -140,14 +210,22 @@ st.divider()
 # GENERATE SUMMARY
 # ---------------------------
 
-if st.button("✨ Generate Summary"):
+if st.button(
+    "✨ Generate Summary"
+):
 
     if text.strip() == "":
-        st.error("No text found in PDF!")
+        st.error(
+            "No text found in PDF!"
+        )
 
     else:
+
         try:
-            with st.spinner("Generating summary..."):
+
+            with st.spinner(
+                "Generating summary..."
+            ):
 
                 model = genai.GenerativeModel(
                     "gemini-2.5-flash"
@@ -168,9 +246,13 @@ Content:
 
                 summary = response.text
 
-                st.success("Summary Generated!")
+                st.success(
+                    "Summary Generated!"
+                )
 
-                st.write(summary)
+                st.write(
+                    summary
+                )
 
                 st.download_button(
                     label="📥 Download Summary",
@@ -181,9 +263,13 @@ Content:
 
         except Exception as e:
 
-            st.error("Error generating summary")
+            st.error(
+                "Error generating summary"
+            )
 
-            st.write(str(e))
+            st.write(
+                str(e)
+            )
 
 st.divider()
 
@@ -191,16 +277,26 @@ st.divider()
 # IMPORTANT SENTENCES
 # ---------------------------
 
-st.header("⭐ Important Sentences")
+st.header(
+    "⭐ Important Sentences"
+)
 
-if st.button("Extract Important Points"):
+if st.button(
+    "Extract Important Points"
+):
 
     if text.strip() == "":
-        st.error("Upload a PDF first")
+        st.error(
+            "Upload a PDF first"
+        )
 
     else:
+
         try:
-            with st.spinner("Finding key points..."):
+
+            with st.spinner(
+                "Finding key points..."
+            ):
 
                 model = genai.GenerativeModel(
                     "gemini-2.5-flash"
@@ -220,15 +316,23 @@ Content:
 
                 important_points = response.text
 
-                st.success("Important points extracted!")
+                st.success(
+                    "Important points extracted!"
+                )
 
-                st.write(important_points)
+                st.write(
+                    important_points
+                )
 
         except Exception as e:
 
-            st.error("Error extracting points")
+            st.error(
+                "Error extracting points"
+            )
 
-            st.write(str(e))
+            st.write(
+                str(e)
+            )
 
 st.divider()
 
@@ -236,7 +340,9 @@ st.divider()
 # CHAT SECTION
 # ---------------------------
 
-st.header("💬 Ask Questions From Your PDF")
+st.header(
+    "💬 Ask Questions From Your PDF"
+)
 
 question = st.text_input(
     "Type your question"
@@ -246,33 +352,53 @@ question = st.text_input(
 # VOICE INPUT
 # ---------------------------
 
-st.subheader("🎤 Or ask using voice")
+st.subheader(
+    "🎤 Or ask using voice"
+)
 
-audio = st.audio_input("Record your question")
+audio = st.audio_input(
+    "Record your question"
+)
 
 if audio is not None:
 
-    st.success("Voice recorded!")
+    st.success(
+        "Voice recorded!"
+    )
 
-    question = "Transcribed voice question"
+    question = (
+        "Transcribed voice question"
+    )
 
-    st.write("Using voice input...")
+    st.write(
+        "Using voice input..."
+    )
 
 # ---------------------------
 # ASK QUESTION
 # ---------------------------
 
-if st.button("Ask Question"):
+if st.button(
+    "Ask Question"
+):
 
     if text.strip() == "":
-        st.error("Upload a PDF first")
+        st.error(
+            "Upload a PDF first"
+        )
 
     elif question.strip() == "":
-        st.error("Enter a question")
+        st.error(
+            "Enter a question"
+        )
 
     else:
+
         try:
-            with st.spinner("Thinking..."):
+
+            with st.spinner(
+                "Thinking..."
+            ):
 
                 model = genai.GenerativeModel(
                     "gemini-2.5-flash"
@@ -296,9 +422,13 @@ Give a clear answer.
 
                 answer = response.text
 
-                st.success("Answer Generated!")
+                st.success(
+                    "Answer Generated!"
+                )
 
-                st.write(answer)
+                st.write(
+                    answer
+                )
 
                 st.download_button(
                     label="📥 Download Answer",
@@ -309,17 +439,24 @@ Give a clear answer.
 
         except Exception as e:
 
-            st.error("Error generating answer")
+            st.error(
+                "Error generating answer"
+            )
 
-            st.write(str(e))
+            st.write(
+                str(e)
+            )
 
 # ---------------------------
 # FOOTER
 # ---------------------------
 
-st.markdown("""
+st.markdown(
+    """
 <hr>
 <center>
 Built for Hackathon 🚀
 </center>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True
+)
