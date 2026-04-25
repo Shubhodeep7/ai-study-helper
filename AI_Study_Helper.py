@@ -3,6 +3,8 @@ from PyPDF2 import PdfReader
 import google.generativeai as genai
 import os
 import math
+from gtts import gTTS
+import tempfile
 
 # ---------------------------
 # PAGE SETUP
@@ -27,13 +29,6 @@ st.markdown("""
     height: 3em;
     width: 100%;
 }
-
-.metric-box {
-    padding: 15px;
-    border-radius: 10px;
-    background-color: #f0f2f6;
-    margin-bottom: 10px;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -50,6 +45,7 @@ st.sidebar.markdown("""
 - Performance Dashboard  
 - AI Content Analysis  
 - PDF Summary  
+- Listen to Summary (Podcast)  
 - Important Sentences  
 - Chat with Notes  
 - Voice Questions  
@@ -107,7 +103,9 @@ if uploaded_file is not None:
 
     word_count = len(text.split())
 
-    reading_time = math.ceil(word_count / 200)
+    reading_time = math.ceil(
+        word_count / 200
+    )
 
     file_size = round(
         uploaded_file.size / 1024,
@@ -149,60 +147,47 @@ if uploaded_file is not None:
         "Detect Key Topics & Difficulty"
     ):
 
-        if text.strip() == "":
-            st.error(
-                "Upload a PDF first"
-            )
+        try:
 
-        else:
+            with st.spinner(
+                "Analyzing content..."
+            ):
 
-            try:
+                model = genai.GenerativeModel(
+                    "gemini-2.5-flash"
+                )
 
-                with st.spinner(
-                    "Analyzing content..."
-                ):
-
-                    model = genai.GenerativeModel(
-                        "gemini-2.5-flash"
-                    )
-
-                    prompt = f"""
+                prompt = f"""
 Analyze the following study material.
 
 Return:
 
-1. Key Topics (3–6 bullet points)
-2. Difficulty Level (Easy / Medium / Hard)
-
-Use simple language.
+1. Key Topics
+2. Difficulty Level
 
 Content:
 {text[:4000]}
 """
 
-                    response = model.generate_content(
-                        prompt
-                    )
+                response = model.generate_content(
+                    prompt
+                )
 
-                    analysis = response.text
-
-                    st.success(
-                        "Analysis Complete!"
-                    )
-
-                    st.write(
-                        analysis
-                    )
-
-            except Exception as e:
-
-                st.error(
-                    "Error analyzing content"
+                st.success(
+                    "Analysis Complete!"
                 )
 
                 st.write(
-                    str(e)
+                    response.text
                 )
+
+        except Exception as e:
+
+            st.error(
+                "Error analyzing content"
+            )
+
+            st.write(str(e))
 
 st.divider()
 
@@ -215,6 +200,7 @@ if st.button(
 ):
 
     if text.strip() == "":
+
         st.error(
             "No text found in PDF!"
         )
@@ -236,8 +222,8 @@ if st.button(
 You are an expert teacher.
 
 1. Identify the SUBJECT
-2. Explain the content clearly
-3. Use simple bullet points
+2. Explain clearly
+3. Use bullet points
 
 Content:
 {text[:3000]}
@@ -250,9 +236,61 @@ Content:
                     "Summary Generated!"
                 )
 
-                st.write(
-                    summary
+                st.write(summary)
+
+                # ---------------------------
+                # AUDIO SUMMARY
+                # ---------------------------
+
+                st.subheader(
+                    "🎧 Listen to Summary"
                 )
+
+                if st.button(
+                    "Generate Audio"
+                ):
+
+                    with st.spinner(
+                        "Creating podcast..."
+                    ):
+
+                        tts = gTTS(
+                            text=summary,
+                            lang="en"
+                        )
+
+                        temp_file = tempfile.NamedTemporaryFile(
+                            delete=False,
+                            suffix=".mp3"
+                        )
+
+                        tts.save(
+                            temp_file.name
+                        )
+
+                        st.success(
+                            "Audio Ready!"
+                        )
+
+                        st.audio(
+                            temp_file.name
+                        )
+
+                        with open(
+                            temp_file.name,
+                            "rb"
+                        ) as audio_file:
+
+                            st.download_button(
+                                label="Download Audio",
+                                data=audio_file,
+                                file_name="summary_audio.mp3",
+                                mime="audio/mp3"
+                            )
+
+                # ---------------------------
+                # DOWNLOAD SUMMARY
+                # ---------------------------
 
                 st.download_button(
                     label="📥 Download Summary",
@@ -267,9 +305,7 @@ Content:
                 "Error generating summary"
             )
 
-            st.write(
-                str(e)
-            )
+            st.write(str(e))
 
 st.divider()
 
@@ -286,6 +322,7 @@ if st.button(
 ):
 
     if text.strip() == "":
+
         st.error(
             "Upload a PDF first"
         )
@@ -304,24 +341,21 @@ if st.button(
 
                 response = model.generate_content(
                     f"""
-Extract the most important sentences
-from this text.
+Extract the most important sentences.
 
-Return 5–8 key points only.
+Return 5–8 bullet points.
 
 Content:
 {text[:3000]}
 """
                 )
 
-                important_points = response.text
-
                 st.success(
                     "Important points extracted!"
                 )
 
                 st.write(
-                    important_points
+                    response.text
                 )
 
         except Exception as e:
@@ -330,9 +364,7 @@ Content:
                 "Error extracting points"
             )
 
-            st.write(
-                str(e)
-            )
+            st.write(str(e))
 
 st.divider()
 
@@ -348,10 +380,6 @@ question = st.text_input(
     "Type your question"
 )
 
-# ---------------------------
-# VOICE INPUT
-# ---------------------------
-
 st.subheader(
     "🎤 Or ask using voice"
 )
@@ -366,13 +394,7 @@ if audio is not None:
         "Voice recorded!"
     )
 
-    question = (
-        "Transcribed voice question"
-    )
-
-    st.write(
-        "Using voice input..."
-    )
+    question = "Voice question received"
 
 # ---------------------------
 # ASK QUESTION
@@ -383,11 +405,13 @@ if st.button(
 ):
 
     if text.strip() == "":
+
         st.error(
             "Upload a PDF first"
         )
 
     elif question.strip() == "":
+
         st.error(
             "Enter a question"
         )
@@ -405,15 +429,11 @@ if st.button(
                 )
 
                 prompt = f"""
-Use the following PDF content to answer.
-
 Content:
 {text[:4000]}
 
 Question:
 {question}
-
-Give a clear answer.
 """
 
                 response = model.generate_content(
@@ -426,9 +446,7 @@ Give a clear answer.
                     "Answer Generated!"
                 )
 
-                st.write(
-                    answer
-                )
+                st.write(answer)
 
                 st.download_button(
                     label="📥 Download Answer",
@@ -443,9 +461,7 @@ Give a clear answer.
                 "Error generating answer"
             )
 
-            st.write(
-                str(e)
-            )
+            st.write(str(e))
 
 # ---------------------------
 # FOOTER
