@@ -2,6 +2,7 @@ import streamlit as st
 from PyPDF2 import PdfReader
 import google.generativeai as genai
 import os
+import math
 
 # Page setup
 st.set_page_config(
@@ -21,6 +22,13 @@ st.markdown("""
     color: white;
     border-radius: 10px;
 }
+
+.metric-box {
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #f0f2f6;
+    margin-bottom: 10px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -34,7 +42,8 @@ st.sidebar.markdown("""
 - Chat with Notes  
 - Important Sentences  
 - Voice Questions  
-- Download Results
+- Download Results  
+- Performance Dashboard
 """)
 
 # Configure AI
@@ -75,15 +84,54 @@ if uploaded_file is not None:
     st.success("✅ PDF uploaded successfully!")
 
     # ---------------------------
-    # SHOW PDF DETAILS
+    # PERFORMANCE DASHBOARD
     # ---------------------------
 
+    st.write("---")
+    st.header("📊 Performance Dashboard")
+
     word_count = len(text.split())
+
+    # Reading time calculation
+    reading_time = math.ceil(word_count / 200)
+
+    # File size
+    file_size = round(uploaded_file.size / 1024, 2)
+
+    col1, col2 = st.columns(2)
+
+    col1.metric(
+        label="📄 Number of Pages",
+        value=total_pages
+    )
+
+    col2.metric(
+        label="📝 Word Count",
+        value=word_count
+    )
+
+    col3, col4 = st.columns(2)
+
+    col3.metric(
+        label="⏱ Estimated Reading Time",
+        value=f"{reading_time} minutes"
+    )
+
+    col4.metric(
+        label="💾 File Size",
+        value=f"{file_size} KB"
+    )
+
+    # ---------------------------
+    # SHOW PDF DETAILS
+    # ---------------------------
 
     st.info(f"""
 📄 File Name: {uploaded_file.name}  
 📑 Pages: {total_pages}  
-📝 Words: {word_count}
+📝 Words: {word_count}  
+⏱ Reading Time: {reading_time} minutes  
+💾 File Size: {file_size} KB
 """)
 
 st.divider()
@@ -272,5 +320,6 @@ Give a clear answer.
 st.markdown("""
 <hr>
 <center>
+Built for Hackathon 🚀
 </center>
 """, unsafe_allow_html=True)
